@@ -3,19 +3,22 @@ package goproteinpack
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"time"
+	"unicode"
 )
 
 type Packer struct {
-	filename   string
-	file       *os.File
-	fileReader *bufio.Reader
+	filename string
+	file     *os.File
+	stream   *Stream
 }
 
 const (
-	codonsPerByte = 4
-	maxShiftWidth = 6
+	maxPackerStreamReadLength = 4
+	maxShiftWidth             = 6
 )
 
 var codonByteMap = map[byte]byte{
@@ -31,41 +34,44 @@ func NewPacker(path string) (*Packer, error) {
 		return nil, err
 	}
 
-	reader := bufio.NewReader(file)
-	return &Packer{filepath.Base(path), file, reader}, nil
+	stream := NewStream(file, maxPackerStreamReadLength)
+
+	return &Packer{filepath.Base(path), file, stream}, nil
 }
 
-func (p *Packer) SaveToFile(path string) error {
+func (packer *Packer) Pack(path string) error {
 	outfile, err := os.Create(path)
 	if err != nil {
 		return err
 	}
 	defer outfile.Close()
-	defer p.file.Close()
+	defer packer.file.Close()
 
 	writer := bufio.NewWriter(outfile)
+	start := time.Now()
+	for {
+		bytes, err := packer.stream.Read()
+		if err == io.EOF {
+			break
+		}
 
-	for codons := p.readNextCodons(); len(codons) != 0; codons = p.readNextCodons() {
-		packedCodons := packCodons(codons)
-		fmt.Printf("writing: %08b to file %s\n", packedCodons, path)
-		writer.WriteByte(packedCodons)
+		codons := packCodons(bytes)
+		writer.WriteByte(codons)
 	}
-
 	writer.Flush()
+	elapsed := time.Since(start)
+
+	fmt.Printf("%s has been packed successfully to %s\n", packer.filename, path)
+	fmt.Printf("packing took %s\n", elapsed)
+
 	return nil
-}
-
-func (p *Packer) readNextCodons() []byte {
-	bytes, _ := p.fileReader.Peek(codonsPerByte)
-	p.fileReader.Discard(codonsPerByte)
-
-	return bytes
 }
 
 func packCodons(codons []byte) byte {
 	var result byte
 
-	for index, codon := range codons {
+	for index, data := range codons {
+		codon := byte(unicode.ToUpper(rune(data)))
 		shiftWidth := byte(maxShiftWidth - (2 * index))
 		codonByte := codonByteMap[codon]
 
