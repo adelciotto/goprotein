@@ -2,27 +2,25 @@ package goproteinpack
 
 import (
 	"bufio"
-	"fmt"
-	"io"
+	"bytes"
 	"os"
 	"path/filepath"
-	"time"
 )
 
 type Unpacker struct {
-	filename string
-	file     *os.File
-	stream   *Stream
+	filename   string
+	file       *os.File
+	fileReader *bufio.Reader
 }
 
 const (
+	numCodonsPerRead            = numCodonsPerByte * maxUnpackerStreamReadLength
 	numCodonsPerByte            = 4
 	maxUnpackerStreamReadLength = 3
-	numCodonsPerRead            = numCodonsPerByte * maxUnpackerStreamReadLength
 )
 
 var byteCodonMap = map[byte]byte{
-	0: 'T',
+	0: 'U',
 	1: 'C',
 	2: 'A',
 	3: 'G',
@@ -34,50 +32,44 @@ func NewUnpacker(path string) (*Unpacker, error) {
 		return nil, err
 	}
 
-	stream := NewStream(file, maxUnpackerStreamReadLength)
-
-	return &Unpacker{filepath.Base(path), file, stream}, nil
+	reader := bufio.NewReader(file)
+	return &Unpacker{filepath.Base(path), file, reader}, nil
 }
 
-// TODO: Remove this and replace with interface to the stream
-// Another file will consume the unpacked stream and perform the DNA -> mRNA -> Protein translation
-func (unpacker *Unpacker) Unpack(path string) error {
-	outfile, err := os.Create(path)
+func (unpacker *Unpacker) Read(buffer []byte) ([]string, error) {
+	_, err := unpacker.fileReader.Read(buffer)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer outfile.Close()
-	defer unpacker.file.Close()
 
-	writer := bufio.NewWriter(outfile)
-	start := time.Now()
-	for {
-		bytes, err := unpacker.stream.Read()
-		if err == io.EOF {
-			break
-		}
+	var stringBuffer bytes.Buffer
 
-		for _, byteItem := range bytes {
-			codons := unpackCodons(byteItem)
-			writer.WriteString(string(codons[:]))
+	for _, packed := range buffer {
+		codons := unpackCodons(packed)
+		stringBuffer.WriteString(codons)
+	}
+	codonsString := stringBuffer.String()
+	stringBuffer.Reset()
+
+	var result []string
+	for index, code := range codonsString {
+		stringBuffer.WriteRune(code)
+		if index > 0 && (index+1)%codesPerCodon == 0 {
+			result = append(result, stringBuffer.String())
+			stringBuffer.Reset()
 		}
 	}
-	writer.Flush()
-	elapsed := time.Since(start)
 
-	fmt.Printf("%s has been unpacked successfully to %s\n", unpacker.filename, path)
-	fmt.Printf("unpacking took %s\n", elapsed)
-
-	return nil
+	return result, nil
 }
 
-func unpackCodons(packed byte) []byte {
-	codons := make([]byte, numCodonsPerByte)
+func unpackCodons(packed byte) string {
+	var codons bytes.Buffer
 
-	codons[0] = byteCodonMap[(packed>>6)&3]
-	codons[1] = byteCodonMap[(packed>>4)&3]
-	codons[2] = byteCodonMap[(packed>>2)&3]
-	codons[3] = byteCodonMap[packed&3]
+	codons.WriteByte(byteCodonMap[(packed>>6)&3])
+	codons.WriteByte(byteCodonMap[(packed>>4)&3])
+	codons.WriteByte(byteCodonMap[(packed>>2)&3])
+	codons.WriteByte(byteCodonMap[packed&3])
 
-	return codons
+	return codons.String()
 }

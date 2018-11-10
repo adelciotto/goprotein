@@ -11,14 +11,15 @@ import (
 )
 
 type Packer struct {
-	filename string
-	file     *os.File
-	stream   *Stream
+	filename   string
+	file       *os.File
+	fileReader *bufio.Reader
 }
 
 const (
-	maxPackerStreamReadLength = 4
-	maxShiftWidth             = 6
+	maxPackerReadLength = 4
+	codesPerCodon       = 3
+	maxShiftWidth       = 6
 )
 
 var codonByteMap = map[byte]byte{
@@ -34,9 +35,8 @@ func NewPacker(path string) (*Packer, error) {
 		return nil, err
 	}
 
-	stream := NewStream(file, maxPackerStreamReadLength)
-
-	return &Packer{filepath.Base(path), file, stream}, nil
+	reader := bufio.NewReader(file)
+	return &Packer{filepath.Base(path), file, reader}, nil
 }
 
 func (packer *Packer) Pack(path string) error {
@@ -48,14 +48,21 @@ func (packer *Packer) Pack(path string) error {
 	defer packer.file.Close()
 
 	writer := bufio.NewWriter(outfile)
+	buffer := make([]byte, maxPackerReadLength)
 	start := time.Now()
 	for {
-		bytes, err := packer.stream.Read()
-		if err == io.EOF {
-			break
+		numBytesRead, err := packer.fileReader.Read(buffer)
+		if err != nil {
+			if err == io.EOF {
+				codons := packCodons(buffer[:numBytesRead])
+				writer.WriteByte(codons)
+				break
+			}
+
+			return fmt.Errorf("%s contains malformed DNA data", packer.filename)
 		}
 
-		codons := packCodons(bytes)
+		codons := packCodons(buffer[:numBytesRead])
 		writer.WriteByte(codons)
 	}
 	writer.Flush()
