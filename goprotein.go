@@ -1,47 +1,53 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"time"
 
-	"github.com/adelciotto/goprotein/goproteinpack"
+	"github.com/adelciotto/goprotein/dnapack"
+)
+
+const (
+	dnaTxtFile    = "./data/test.txt"
+	dnaPackedFile = "./data/test.dna"
 )
 
 func main() {
-	testFile := "./dna/test.txt"
-
 	// TODO: Replace with real CLI program
-	packer, err := goproteinpack.NewPacker(testFile)
+	infile, err := os.Open(dnaTxtFile)
 	if err != nil {
 		panic(err)
 	}
+	defer infile.Close()
 
-	err = packer.Pack("./dna/test.rna")
+	outfile, err := os.Create(dnaPackedFile)
 	if err != nil {
 		panic(err)
 	}
+	defer outfile.Close()
 
-	unpacker, err := goproteinpack.NewUnpacker("./dna/test.rna")
+	writer := bufio.NewWriter(outfile)
+	packer := dnapack.NewPacker(bufio.NewReader(infile), writer)
+
+	start := time.Now()
+	err = packer.Pack()
 	if err != nil {
 		panic(err)
 	}
+	writer.Flush()
+	elapsed := time.Since(start)
+	fmt.Printf("%s packed to %s in %s\n", dnaTxtFile, dnaPackedFile, elapsed)
 
-	fmt.Printf("RNA transcribed sequence for %s\n", testFile)
+	infile, _ = os.Open(dnaPackedFile)
 
-	buffer := make([]byte, 3)
-	for {
-		codons, err := unpacker.Read(buffer)
-		if err != nil {
-			break
-		}
-
-		for _, codon := range codons {
-			fmt.Printf("%6s", codon)
-
-			if codon == "UGA" {
-				break
-			}
-		}
+	unpacker := dnapack.NewUnpacker(bufio.NewReader(infile), os.Stdout)
+	start = time.Now()
+	err = unpacker.Unpack()
+	if err != nil {
+		panic(err)
 	}
-
-	fmt.Println()
+	elapsed = time.Since(start)
+	fmt.Printf("\n%s unpacked to STDOUT in %s\n", dnaPackedFile, elapsed)
 }
