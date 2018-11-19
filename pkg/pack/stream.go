@@ -1,4 +1,4 @@
-package dnapack
+package pack
 
 import "io"
 

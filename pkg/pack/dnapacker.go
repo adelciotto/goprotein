@@ -1,4 +1,4 @@
-package dnapack
+package pack
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"unicode"
 )
 
-type Packer struct {
+type DNAPacker struct {
 	stream *Stream
 	writer io.Writer
 }
@@ -23,12 +23,12 @@ var nucleotideByteMap = map[byte]byte{
 	'G': 3,
 }
 
-func NewPacker(reader io.Reader, writer io.Writer) *Packer {
+func NewDNAPacker(reader io.Reader, writer io.Writer) *DNAPacker {
 	stream := NewStream(reader, readLength)
-	return &Packer{stream, writer}
+	return &DNAPacker{stream, writer}
 }
 
-func (packer *Packer) Pack() error {
+func (packer *DNAPacker) Pack() error {
 	err := packer.stream.ReadContents(func(nucleotides []byte) error {
 		packedNucleotides, err := packer.packNucleotides(nucleotides)
 		if err != nil {
@@ -42,7 +42,7 @@ func (packer *Packer) Pack() error {
 	return err
 }
 
-func (packer *Packer) packNucleotides(nucleotides []byte) (byte, error) {
+func (packer *DNAPacker) packNucleotides(nucleotides []byte) (byte, error) {
 	var packedNucleotides byte
 
 	for index, nucleotide := range nucleotides {

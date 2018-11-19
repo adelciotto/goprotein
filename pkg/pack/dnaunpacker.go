@@ -1,13 +1,13 @@
-package dnapack
+package pack
 
 import (
 	"bytes"
 	"io"
 
-	"github.com/adelciotto/goprotein/codons"
+	"github.com/adelciotto/goprotein/internal/codons"
 )
 
-type Unpacker struct {
+type DNAUnpacker struct {
 	stream *Stream
 	writer io.Writer
 }
@@ -24,18 +24,18 @@ var byteToNucleotideMap = map[byte]byte{
 	3: 'G',
 }
 
-func NewUnpacker(reader io.Reader, writer io.Writer) *Unpacker {
+func NewDNAUnpacker(reader io.Reader, writer io.Writer) *DNAUnpacker {
 	stream := NewStream(reader, unpackerReadLength)
-	return &Unpacker{stream, writer}
+	return &DNAUnpacker{stream, writer}
 }
 
-func (unpacker *Unpacker) Unpack() error {
+func (unpacker *DNAUnpacker) Unpack() error {
 	return unpacker.UnpackWithFunc(func(codon string) {
 		unpacker.writer.Write([]byte(codon))
 	})
 }
 
-func (unpacker *Unpacker) UnpackWithFunc(fn func(codon string)) error {
+func (unpacker *DNAUnpacker) UnpackWithFunc(fn func(codon string)) error {
 	err := unpacker.stream.ReadContents(func(packedNucleotides []byte) error {
 		nucleotides := unpacker.unpackNucleotides(packedNucleotides)
 		codons := unpacker.splitNucleotidesIntoCodons(nucleotides)
@@ -49,7 +49,7 @@ func (unpacker *Unpacker) UnpackWithFunc(fn func(codon string)) error {
 	return err
 }
 
-func (unpacker *Unpacker) splitNucleotidesIntoCodons(nucleotides string) []string {
+func (unpacker *DNAUnpacker) splitNucleotidesIntoCodons(nucleotides string) []string {
 	var result []string
 	var buffer bytes.Buffer
 
@@ -70,7 +70,7 @@ func (unpacker *Unpacker) splitNucleotidesIntoCodons(nucleotides string) []strin
 	return result
 }
 
-func (unpacker *Unpacker) unpackNucleotides(packedNucleotides []byte) string {
+func (unpacker *DNAUnpacker) unpackNucleotides(packedNucleotides []byte) string {
 	var buffer bytes.Buffer
 
 	for _, packedNucleotidesByte := range packedNucleotides {
