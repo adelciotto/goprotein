@@ -82,5 +82,5 @@ func printError(errMsg string) {
 }
 
 func printUsage() {
-	fmt.Println("usage: dnapack --input-file=<input-file> --output-file=<output-file>")
+	fmt.Println("usage: pack --input-file=<input-file> --output-file=<output-file>")
 }
