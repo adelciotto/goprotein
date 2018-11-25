@@ -29,7 +29,7 @@ func NewDNAPacker(reader io.Reader, writer io.Writer) *DNAPacker {
 }
 
 func (packer *DNAPacker) Pack() error {
-	err := packer.stream.ReadContents(func(nucleotides []byte) error {
+	return packer.stream.ReadContents(func(nucleotides []byte) error {
 		packedNucleotides, err := packer.packNucleotides(nucleotides)
 		if err != nil {
 			return err
@@ -38,8 +38,6 @@ func (packer *DNAPacker) Pack() error {
 		packer.writer.Write([]byte{packedNucleotides})
 		return nil
 	})
-
-	return err
 }
 
 func (packer *DNAPacker) packNucleotides(nucleotides []byte) (byte, error) {

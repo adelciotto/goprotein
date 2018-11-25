@@ -11,10 +11,7 @@ type DNAReader struct {
 	stream *Stream
 }
 
-const (
-	streamReadLength    = 3
-	nucleotidesPerCodon = 3
-)
+const streamReadLength = 3
 
 var byteToNucleotideMap = map[byte]byte{
 	0: 'T',
@@ -47,14 +44,8 @@ func splitNucleotidesIntoCodons(nucleotides string) []string {
 
 	for index, nucleotide := range nucleotides {
 		buffer.WriteRune(nucleotide)
-		if index > 0 && (index+1)%nucleotidesPerCodon == 0 {
-			codon := buffer.String()
-			result = append(result, codon)
-
-			if _, match := codons.DNAStopCodons[codon]; match {
-				break
-			}
-
+		if index > 0 && (index+1)%codons.NucleotidesPerCodon == 0 {
+			result = append(result, buffer.String())
 			buffer.Reset()
 		}
 	}
@@ -66,10 +57,10 @@ func unpackNucleotides(packedNucleotides []byte) string {
 	var buffer bytes.Buffer
 
 	for _, packedNucleotidesByte := range packedNucleotides {
-		buffer.WriteByte(byteToNucleotideMap[(packedNucleotidesByte>>6)&nucleotidesPerCodon])
-		buffer.WriteByte(byteToNucleotideMap[(packedNucleotidesByte>>4)&nucleotidesPerCodon])
-		buffer.WriteByte(byteToNucleotideMap[(packedNucleotidesByte>>2)&nucleotidesPerCodon])
-		buffer.WriteByte(byteToNucleotideMap[packedNucleotidesByte&nucleotidesPerCodon])
+		buffer.WriteByte(byteToNucleotideMap[(packedNucleotidesByte>>6)&codons.NucleotidesPerCodon])
+		buffer.WriteByte(byteToNucleotideMap[(packedNucleotidesByte>>4)&codons.NucleotidesPerCodon])
+		buffer.WriteByte(byteToNucleotideMap[(packedNucleotidesByte>>2)&codons.NucleotidesPerCodon])
+		buffer.WriteByte(byteToNucleotideMap[packedNucleotidesByte&codons.NucleotidesPerCodon])
 	}
 
 	return buffer.String()

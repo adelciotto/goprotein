@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/adelciotto/goprotein/pkg/pack"
+	"github.com/adelciotto/goprotein/pkg/translate"
 )
 
 func main() {
@@ -35,9 +36,8 @@ func translateDNA(inputfilepath string) error {
 	defer inputFile.Close()
 
 	reader := pack.NewDNAReader(bufio.NewReader(inputFile))
-	err = reader.ReadContents(func(codon string) {
-		fmt.Print(codon)
-	})
+	translator := translate.NewDNATranslator(reader)
+	err = translator.Translate()
 	if err != nil {
 		return err
 	}
