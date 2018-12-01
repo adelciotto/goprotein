@@ -13,13 +13,6 @@ type DNAReader struct {
 
 const streamReadLength = 3
 
-var byteToNucleotideMap = map[byte]byte{
-	0: 'T',
-	1: 'C',
-	2: 'A',
-	3: 'G',
-}
-
 func NewDNAReader(reader io.Reader) *DNAReader {
 	stream := NewStream(reader, streamReadLength)
 	return &DNAReader{stream}
@@ -57,10 +50,10 @@ func unpackNucleotides(packedNucleotides []byte) string {
 	var buffer bytes.Buffer
 
 	for _, packedNucleotidesByte := range packedNucleotides {
-		buffer.WriteByte(byteToNucleotideMap[(packedNucleotidesByte>>6)&codons.NucleotidesPerCodon])
-		buffer.WriteByte(byteToNucleotideMap[(packedNucleotidesByte>>4)&codons.NucleotidesPerCodon])
-		buffer.WriteByte(byteToNucleotideMap[(packedNucleotidesByte>>2)&codons.NucleotidesPerCodon])
-		buffer.WriteByte(byteToNucleotideMap[packedNucleotidesByte&codons.NucleotidesPerCodon])
+		buffer.WriteByte(codons.Nucleotides[(packedNucleotidesByte>>6)&codons.NucleotidesPerCodon])
+		buffer.WriteByte(codons.Nucleotides[(packedNucleotidesByte>>4)&codons.NucleotidesPerCodon])
+		buffer.WriteByte(codons.Nucleotides[(packedNucleotidesByte>>2)&codons.NucleotidesPerCodon])
+		buffer.WriteByte(codons.Nucleotides[packedNucleotidesByte&codons.NucleotidesPerCodon])
 	}
 
 	return buffer.String()

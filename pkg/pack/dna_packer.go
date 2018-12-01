@@ -12,8 +12,8 @@ type DNAPacker struct {
 }
 
 const (
-	readLength    = 4
-	maxShiftWidth = 6
+	maxStreamReadLength = 4
+	maxShiftWidth       = 6
 )
 
 var nucleotideByteMap = map[byte]byte{
@@ -24,7 +24,7 @@ var nucleotideByteMap = map[byte]byte{
 }
 
 func NewDNAPacker(reader io.Reader, writer io.Writer) *DNAPacker {
-	stream := NewStream(reader, readLength)
+	stream := NewStream(reader, maxStreamReadLength)
 	return &DNAPacker{stream, writer}
 }
 

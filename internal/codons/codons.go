@@ -6,6 +6,8 @@ import (
 
 const NucleotidesPerCodon = 3
 
+var Nucleotides = []byte{'T', 'C', 'A', 'G'}
+
 var DNAStopCodons = map[string]bool{
 	"TGA": true,
 	"TAA": true,

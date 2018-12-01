@@ -2,6 +2,7 @@ package translate
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/adelciotto/goprotein/internal/codons"
 	"github.com/adelciotto/goprotein/pkg/pack"
@@ -9,10 +10,11 @@ import (
 
 type DNATranslator struct {
 	dnaReader *pack.DNAReader
+	writer    io.Writer
 }
 
-func NewDNATranslator(dnaReader *pack.DNAReader) *DNATranslator {
-	return &DNATranslator{dnaReader}
+func NewDNATranslator(dnaReader *pack.DNAReader, writer io.Writer) *DNATranslator {
+	return &DNATranslator{dnaReader, writer}
 }
 
 func (translator *DNATranslator) Translate() error {
@@ -20,9 +22,10 @@ func (translator *DNATranslator) Translate() error {
 		rnaCodon := codons.DNACodonToRNA(codon)
 		protein, found := codons.RNACodonTable[rnaCodon]
 		if found {
-			fmt.Printf("%s: %s ", codon, protein)
+			output := fmt.Sprintf("%s: %s ", codon, protein)
+			translator.writer.Write([]byte(output))
 		} else {
-			fmt.Print("UNKNOWN")
+			translator.writer.Write([]byte("UNKNOWN"))
 		}
 	})
 }

@@ -27,7 +27,6 @@ func main() {
 	}
 }
 
-// TODO: Actually translate DNA sequence into proteins
 func translateDNA(inputfilepath string) error {
 	inputFile, err := os.Open(inputfilepath)
 	if err != nil {
@@ -36,12 +35,13 @@ func translateDNA(inputfilepath string) error {
 	defer inputFile.Close()
 
 	reader := pack.NewDNAReader(bufio.NewReader(inputFile))
-	translator := translate.NewDNATranslator(reader)
+	translator := translate.NewDNATranslator(reader, os.Stdout)
 	err = translator.Translate()
 	if err != nil {
 		return err
 	}
 
+	fmt.Println()
 	return nil
 }
 
